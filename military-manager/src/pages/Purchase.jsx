@@ -33,6 +33,7 @@ const Purchase = () => {
         setBases(baseRes.data);
         setAssets(assetRes.data);
         setPurchases(purchaseRes.data);
+        console.log("Purchases :", purchaseRes.data)
       } catch (err) {
         console.error('Error fetching data:', err);
       }
@@ -77,11 +78,21 @@ const Purchase = () => {
         date: new Date().toISOString()
       };
 
-      await createPurchase(payload);
-      alert('Purchase successful');
-      window.location.reload();
+      const res = await createPurchase(payload);
+      const newPurchase = res.data.purchase;
+
+      alert('✅ Purchase successful');
+      setPurchases((prev) => [newPurchase, ...prev]);
+      setFormData({
+        baseId: '',
+        name: '',
+        type: '',
+        assetId: '',
+        quantity: '',
+        costPerUnit: ''
+      });
     } catch (err) {
-      alert('Purchase failed: ' + (err.response?.data?.error || err.message));
+      alert('❌ Purchase failed: ' + (err.response?.data?.error || err.message));
     }
   };
 
@@ -207,26 +218,36 @@ const Purchase = () => {
       <div className="mt-10">
         <h3 className="text-xl font-semibold text-gray-700 mb-4">🧾 Recent Purchases</h3>
         <ul className="space-y-3">
-          {purchases.slice(0, 5).map((p, index) => (
-            <motion.li
-              key={p._id}
-              className="p-4 bg-gray-50 rounded shadow-sm"
-              variants={fadeUp}
-              initial="hidden"
-              animate="visible"
-              transition={{ delay: 0.1 * index }}
-            >
-              <div className="font-medium text-gray-800">
-                {p.assetId?.name || p.name} ({p.assetId?.type || p.type}) for <strong>{p.baseId?.name}</strong>
-              </div>
-              <div className="text-sm text-gray-600">
-                Qty: {p.quantity}, Cost/unit: ₹{p.costPerUnit}, Total: ₹{p.totalCost}
-              </div>
-              <div className="text-xs text-gray-500">
-                {new Date(p.date).toLocaleString()}
-              </div>
-            </motion.li>
-          ))}
+          {purchases
+  .filter(p => p)
+  .slice(0, 5)
+  .map((p, index) => {
+    const name = p.assetId?.name || 'Unknown';
+    const type = p.assetId?.type || 'Unknown';
+    const base = p.baseId?.name || 'Unknown Base';
+
+    return (
+      <motion.li
+        key={p._id}
+        className="p-4 bg-gray-50 rounded shadow-sm"
+        variants={fadeUp}
+        initial="hidden"
+        animate="visible"
+        transition={{ delay: 0.1 * index }}
+      >
+        <div className="font-medium text-gray-800">
+          {name} ({type}) for <strong>{base}</strong>
+        </div>
+        <div className="text-sm text-gray-600">
+          Qty: {p.quantity}, Cost/unit: ₹{p.costPerUnit}, Total: ₹{p.totalCost}
+        </div>
+        <div className="text-xs text-gray-500">
+          {new Date(p.date).toLocaleString()}
+        </div>
+      </motion.li>
+    );
+  })}
+
         </ul>
       </div>
     </motion.div>

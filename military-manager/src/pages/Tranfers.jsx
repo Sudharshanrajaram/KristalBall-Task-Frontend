@@ -18,22 +18,23 @@ const Transfer = () => {
   });
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [assetRes, baseRes, transferRes] = await Promise.all([
-          getAllAssets(),
-          getAllBases(),
-          getAllTransfers()
-        ]);
-        setAssets(assetRes.data);
-        setBases(baseRes.data);
-        setTransfers(transferRes.data);
-      } catch (err) {
-        console.error('Error fetching transfer data:', err);
-      }
-    };
     fetchData();
   }, []);
+
+  const fetchData = async () => {
+    try {
+      const [assetRes, baseRes, transferRes] = await Promise.all([
+        getAllAssets(),
+        getAllBases(),
+        getAllTransfers()
+      ]);
+      setAssets(assetRes.data);
+      setBases(baseRes.data);
+      setTransfers(transferRes.data);
+    } catch (err) {
+      console.error('Error fetching transfer data:', err);
+    }
+  };
 
   const handleChange = (e) => {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -51,19 +52,14 @@ const Transfer = () => {
         ...formData,
         quantity: Number(formData.quantity)
       };
-      const res = await createTransfer(payload);
-      const newTransfer = res.data.transfer;
 
-      const assetName = assets.find(a => a._id === formData.assetId)?.name;
-      const fromBase = bases.find(b => b._id === formData.fromBaseId)?.name;
-      const toBase = bases.find(b => b._id === formData.toBaseId)?.name;
-
-      alert(`Transfer successful:\n${assetName} from ${fromBase} to ${toBase} (Qty: ${formData.quantity})`);
-
-      setTransfers((prev) => [newTransfer, ...prev]);
+      await createTransfer(payload);
+      alert('✅ Transfer successful!');
       setFormData({ assetId: '', fromBaseId: '', toBaseId: '', quantity: '' });
+
+      await fetchData(); // Re-fetch to get populated fields
     } catch (err) {
-      alert('Transfer failed: ' + (err.response?.data?.message || err.message));
+      alert('❌ Transfer failed: ' + (err.response?.data?.message || err.message));
     }
   };
 
@@ -71,7 +67,6 @@ const Transfer = () => {
     <div className="p-4 md:p-6">
       <h2 className="text-2xl font-bold text-gray-800 mb-6">🔁 Transfer Assets</h2>
 
-      {/* Transfer Form */}
       <form
         onSubmit={handleSubmit}
         className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-white p-6 rounded-lg shadow-md"
@@ -142,7 +137,6 @@ const Transfer = () => {
         </div>
       </form>
 
-      {/* Recent Transfers */}
       <div className="mt-10">
         <h3 className="text-xl font-semibold text-gray-700 mb-4">📦 Recent Transfers</h3>
         <div className="space-y-3">
@@ -154,8 +148,9 @@ const Transfer = () => {
                 <div key={t._id} className="p-4 bg-gray-50 rounded shadow-sm">
                   <div className="text-gray-800 font-medium">
                     {t.assetId?.name || 'Unknown asset'} transferred from{' '}
-                    <span className="font-semibold">{t.fromBaseId?.name}</span> to{' '}
-                    <span className="font-semibold">{t.toBaseId?.name}</span>
+                    <span className="font-semibold">{t.fromBaseId?.name || 'Unknown base'}</span>{' '}
+                    to{' '}
+                    <span className="font-semibold">{t.toBaseId?.name || 'Unknown base'}</span>
                   </div>
                   <div className="text-sm text-gray-500 mt-1">
                     Qty: {t.quantity} | {new Date(t.date).toLocaleString()}
